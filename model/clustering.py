@@ -30,10 +30,11 @@ def get_next_boxplot_dir(stat_dir):
 RESULT_DIR  = "model/model_result"
 
 # ─── 1) (예시) 데이터프레임 로드 ────────────────────────────
-df = pd.read_csv("data/주가수익률/주가수익률_경기동행.csv", index_col=0)
-df.drop(columns="stock_code", inplace=True)
+df = pd.read_csv("data/주가수익률/주가수익률_Temp.csv", index_col=0)
+df.drop(columns=["회사명", "stock_code", "상장일"], inplace=True)
 if "Unnamed: 0" in df.columns:
     df.drop(columns="Unnamed: 0", inplace=True)
+df.dropna(inplace=True)
 
 df, k_final = function.clustering(df)
 
