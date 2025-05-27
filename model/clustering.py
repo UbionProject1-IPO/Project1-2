@@ -3,13 +3,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings
+import os
+import json
+import optuna
+import function
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score, cross_validate
 from sklearn.ensemble import RandomForestClassifier
-import function
 
 warnings.filterwarnings("ignore")
 
@@ -17,7 +20,9 @@ warnings.filterwarnings("ignore")
 RESULT_DIR  = "model/model_result"
 
 # ─── 1) (예시) 데이터프레임 로드 ────────────────────────────
-df = pd.read_csv("data/경기종합지수.csv", index_col=0)
+df = pd.read_csv("data/주가수익률_final.csv", index_col=0)
+df.drop(columns=["회사명", "stock_code"], inplace=True)
+df = df.dropna().reset_index(drop=True)
 
 df, k_final = function.clustering(df)
 
