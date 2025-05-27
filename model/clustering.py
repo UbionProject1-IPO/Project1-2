@@ -30,8 +30,12 @@ def get_next_boxplot_dir(stat_dir):
 RESULT_DIR  = "model/model_result"
 
 # ─── 1) (예시) 데이터프레임 로드 ────────────────────────────
-df = pd.read_csv("data/주가수익률/주가수익률_Temp.csv")
-df.drop(columns=["회사명", "stock_code", "상장일"], inplace=True)
+df = pd.read_csv("data/주가수익률/주가수익률_CSI.csv")
+df.drop(columns=["회사명"], inplace=True)
+if "stock_code" in df.columns:
+    df.drop(columns="stock_code", inplace=True)
+if "상장일" in df.columns:
+    df.drop(columns="상장일", inplace=True)
 if "Unnamed: 0" in df.columns:
     df.drop(columns="Unnamed: 0", inplace=True)
 df.dropna(inplace=True)
