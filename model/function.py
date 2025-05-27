@@ -29,8 +29,8 @@ def clustering(df) -> pd.DataFrame:
     # ─── 2) 데이터 스케일링 ────────────────────────────────────
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(df.values)
-
-    # ─── 3) Elbow & 실루엣 평가 함수 ───────────────────────────
+    df_scaled = pd.DataFrame(X_scaled, columns=df.columns, index=df.index)
+    df_scaled.to_csv("data/주가수익률/주가수익률_Temp_scaled.csv", encoding="utf-8-sig", index=True)
 
     # ─── 4) K 범위 평가 ────────────────────────────────────────
     K_MIN, K_MAX = 2, 10
@@ -106,7 +106,7 @@ def feature_engineering(df, k_final, file_name):
 
     RANDOM_STATE = 42
     N_SPLITS     = 5
-    N_TRIALS_RF  = 20
+    N_TRIALS_RF  = 200
 
     # ─── 1) 데이터·결측치 처리 ────────────────────────────────
     X, y = df.drop(columns=[CLUSTER_COL]), df[CLUSTER_COL]

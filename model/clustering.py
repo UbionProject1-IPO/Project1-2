@@ -30,7 +30,7 @@ def get_next_boxplot_dir(stat_dir):
 RESULT_DIR  = "model/model_result"
 
 # ─── 1) (예시) 데이터프레임 로드 ────────────────────────────
-df = pd.read_csv("data/주가수익률/주가수익률_Temp.csv", index_col=0)
+df = pd.read_csv("data/주가수익률/주가수익률_Temp.csv")
 df.drop(columns=["회사명", "stock_code", "상장일"], inplace=True)
 if "Unnamed: 0" in df.columns:
     df.drop(columns="Unnamed: 0", inplace=True)
@@ -59,7 +59,8 @@ fi_df = function.feature_engineering(df, k_final, "국면_clustering")
 
 # ── top-10 리스트 추출 ─────────────────────────────────────────
 top10_features = fi_df.head(10)["feature"].tolist()
-print(top10_features)
+features = fi_df['feature'].tolist()
+print(features)
 
 # ── 조건 분기: 원하는 컬럼이 top-10 내부에 있는지 확인 ───────
 TARGET_FEATURE = "경기국면"      # <- 여기에 확인할 컬럼명을 입력
