@@ -1,10 +1,10 @@
 {
-    "precision_mean": 1.0,
-    "recall_mean": 1.0,
-    "f1_mean": 1.0,
-    "roc_auc_mean": 1.0,
-    "precision_std": 0.0,
-    "recall_std": 0.0,
-    "f1_std": 0.0,
-    "roc_auc_std": 0.0
+    "precision_mean": 0.9077307692307693,
+    "recall_mean": 0.8234482758620689,
+    "f1_mean": 0.8613816541685395,
+    "roc_auc_mean": 0.9800523492639647,
+    "precision_std": 0.04984478868026107,
+    "recall_std": 0.03842314007499066,
+    "f1_std": 0.009442924528409698,
+    "roc_auc_std": 0.004965836813333538
 }
