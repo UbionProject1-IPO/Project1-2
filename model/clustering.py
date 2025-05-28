@@ -50,7 +50,8 @@ for sr in sr_list:
         print("Unnamed: 0 컬럼 삭제")
     df.dropna(inplace=True)
     
-    df, k_final = function.cluster_gmm(df)
+    # df, k_final = function.cluster_gmm(df)
+    df, k_final = function.clustering(df)
 
     #---
     # df_copy = df_copy.join(df[f"cluster_k{k_final}"])
@@ -82,72 +83,74 @@ for sr in sr_list:
     if TARGET_FEATURE in top10_features:
         print(f"『{TARGET_FEATURE}』이(가) Top-10 안에 있습니다. 후속 코드를 실행합니다.")
     
-        # ── 0) 준비 ────────────────────────────────────────────────────
-        import os, pandas as pd, matplotlib.pyplot as plt
+        # # ── 0) 준비 ────────────────────────────────────────────────────
+        # import os, pandas as pd, matplotlib.pyplot as plt
 
-        # 결과를 넣을 하위 폴더 생성
-        STAT_DIR = os.path.join(RESULT_DIR, "target0_vs_1")
-        os.makedirs(STAT_DIR, exist_ok=True)
+        # # 결과를 넣을 하위 폴더 생성
+        # STAT_DIR = os.path.join(RESULT_DIR, "target0_vs_1")
+        # os.makedirs(STAT_DIR, exist_ok=True)
 
-        # ── 1) target 값별 데이터프레임 분리 ───────────────────────────
-        mask0, mask1 = (df[TARGET_FEATURE] == 0), (df[TARGET_FEATURE] == 1)
-        X0, X1 = df[mask0], df[mask1]
+        # # ── 1) target 값별 데이터프레임 분리 ───────────────────────────
+        # mask0, mask1 = (df[TARGET_FEATURE] == 0), (df[TARGET_FEATURE] == 1)
+        # X0, X1 = df[mask0], df[mask1]
 
-        X0.drop(f"cluster_k{k_final}", axis=1, inplace=True)
-        X1.drop(f"cluster_k{k_final}", axis=1, inplace=True)
+        # X0.drop(f"cluster_k{k_final}", axis=1, inplace=True)
+        # X1.drop(f"cluster_k{k_final}", axis=1, inplace=True)
 
-        # ── 2) 기초 통계량 계산 & CSV 저장 ────────────────────────────
-        stats0 = X0.describe().T          # target=0
-        stats1 = X1.describe().T          # target=1
+        # # ── 2) 기초 통계량 계산 & CSV 저장 ────────────────────────────
+        # stats0 = X0.describe().T          # target=0
+        # stats1 = X1.describe().T          # target=1
 
-        stats_combined = stats0.add_suffix("_0").join(
-                        stats1.add_suffix("_1"))
+        # stats_combined = stats0.add_suffix("_0").join(
+        #                 stats1.add_suffix("_1"))
 
-        stats_path = os.path.join(STAT_DIR, "basic_stats_target0_vs_1.csv")
-        stats_combined.to_csv(stats_path, encoding="utf-8-sig")
-        print(f"■ 기초 통계량 CSV 저장 → {stats_path}")
+        # stats_path = os.path.join(STAT_DIR, "basic_stats_target0_vs_1.csv")
+        # stats_combined.to_csv(stats_path, encoding="utf-8-sig")
+        # print(f"■ 기초 통계량 CSV 저장 → {stats_path}")
 
-        # ── 3) 컬럼별 box-plot 저장 ──────────────────────────────────
-        plot_dir = get_next_boxplot_dir(STAT_DIR)
-        os.makedirs(plot_dir, exist_ok=True)
+        # # ── 3) 컬럼별 box-plot 저장 ──────────────────────────────────
+        # plot_dir = get_next_boxplot_dir(STAT_DIR)
+        # os.makedirs(plot_dir, exist_ok=True)
 
-        for col in X0.columns:
-            plt.figure(figsize=(10, 5))
-            plt.boxplot([X0[col].dropna(), X1[col].dropna()],
-                        labels=["target=0", "target=1"])
-            plt.title(f"{col} (target별 분포)")
-            plt.ylabel(col)
-            plt.tight_layout()
+        # for col in X0.columns:
+        #     plt.figure(figsize=(10, 5))
+        #     plt.boxplot([X0[col].dropna(), X1[col].dropna()],
+        #                 labels=["target=0", "target=1"])
+        #     plt.title(f"{col} (target별 분포)")
+        #     plt.ylabel(col)
+        #     plt.tight_layout()
 
-            plot_path = os.path.join(plot_dir, f"{col}_boxplot.png")
-            plt.savefig(plot_path, dpi=300)
-            plt.close()
+        #     plot_path = os.path.join(plot_dir, f"{col}_boxplot.png")
+        #     plt.savefig(plot_path, dpi=300)
+        #     plt.close()
 
-        print(f"■ box-plot PNG 저장 → {plot_dir} 폴더 내 다수 파일")
+        # print(f"■ box-plot PNG 저장 → {plot_dir} 폴더 내 다수 파일")
 
 
-        X0, X0_k_final = function.cluster_gmm(X0)
-        X0_fi_df = function.feature_engineering(X0, X0_k_final, "국면0_clustering")
+        # X0, X0_k_final = function.cluster_gmm(X0)
+        # X0, X0_k_final = function.clustering(X0)
+        # X0_fi_df = function.feature_engineering(X0, X0_k_final, "국면0_clustering")
 
-        X1, X1_k_final = function.cluster_gmm(X1)
-        X1_fi_df = function.feature_engineering(X1, X1_k_final, "국면1_clustering")
+        # X1, X1_k_final = function.cluster_gmm(X1)
+        # X1, X1_k_final = function.clustering(X1)
+        # X1_fi_df = function.feature_engineering(X1, X1_k_final, "국면1_clustering")
 
     else:
         print(f"『{TARGET_FEATURE}』이(가) Top-10 안에 없으므로 후속 코드를 건너뜁니다.")
 
-        df = pd.read_csv("./data/주가수익률_raw/주가수익률_base.csv")
+        # df = pd.read_csv("./data/주가수익률_raw/주가수익률_base.csv")
 
-        df.drop(columns=["회사명"], inplace=True)
-        if "stock_code" in df.columns:
-            df.drop(columns="stock_code", inplace=True)
-            print("stock_code 컬럼 삭제")
-        if "상장일" in df.columns:
-            df.drop(columns="상장일", inplace=True)
-            print("상장일 컬럼 삭제")
-        if "Unnamed: 0" in df.columns:
-            df.drop(columns="Unnamed: 0", inplace=True)
-            print("Unnamed: 0 컬럼 삭제")
+        # df.drop(columns=["회사명"], inplace=True)
+        # if "stock_code" in df.columns:
+        #     df.drop(columns="stock_code", inplace=True)
+        #     print("stock_code 컬럼 삭제")
+        # if "상장일" in df.columns:
+        #     df.drop(columns="상장일", inplace=True)
+        #     print("상장일 컬럼 삭제")
+        # if "Unnamed: 0" in df.columns:
+        #     df.drop(columns="Unnamed: 0", inplace=True)
+        #     print("Unnamed: 0 컬럼 삭제")
 
-        df, k_final = function.cluster_gmm(df)
-        fi_df = function.feature_engineering(df, k_final, "전체_clustering")
+        # df, k_final = function.cluster_gmm(df)
+        # fi_df = function.feature_engineering(df, k_final, "전체_clustering")
     
