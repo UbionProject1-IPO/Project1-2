@@ -2,6 +2,7 @@ import os, pandas as pd, matplotlib.pyplot as plt
 import function
 
 df = pd.read_csv("data/주가수익률/주가수익률_CSI.csv")
+df.drop(columns=["회사명", "stock_code", "상장일"], inplace=True)
 
 STAT_DIR = os.path.join("model/model_result", "target0_vs_1")
 os.makedirs(STAT_DIR, exist_ok=True)
