@@ -212,7 +212,8 @@ def feature_engineering(df, k_final, file_name):
     fi_path = os.path.join(RESULT_DIR, f"{file_name}_feature_importance.csv")
     fi_df.to_csv(fi_path, index=False, encoding="utf-8-sig")
 
-    analyze_shap_values(best_rf, X, feature_names=X.columns)
+    shap_df = get_shap_feature_ranking(best_rf, X, max_display=None)
+    print(shap_df)
 
     print(f"\n■ 저장 완료")
     print(f"  • 메트릭  → {metrics_path}")
@@ -286,8 +287,8 @@ def cluster_gmm(df: pd.DataFrame, k_min=2, k_max=10, random_state=42) -> tuple[p
     k_final = _get_user_k_choice(k_min, k_max, silhouettes, "Silhouette Score (GMM)", higher_is_better=True)
 
     final_gmm = GaussianMixture(n_components=k_final, random_state=random_state, n_init=10)
-    df[f"cluster_gmm_{k_final}"] = final_gmm.fit_predict(X_scaled)
-    print(f"GMM clustering complete. Labels added to 'cluster_gmm_{k_final}'.")
+    df[f"cluster_k{k_final}"] = final_gmm.fit_predict(X_scaled)
+    print(f"GMM clustering complete. Labels added to 'cluster_k{k_final}'.")
     return df, k_final
 
 ## 2. Agglomerative Hierarchical Clustering
@@ -402,48 +403,187 @@ def cluster_kprototypes(df_original: pd.DataFrame, categorical_cols_indices: lis
 
 
 
-def analyze_shap_values(model, X_features, feature_names=None):
+def get_shap_feature_ranking(model, X, max_display=None):
     """
-    RandomForest 계열 모델과 학습용 데이터(X_features)를 입력으로 받아
-    각 피처의 SHAP 값을 계산하고, global importance(bar)와 summary plot을 출력합니다.
+    SHAP 값을 계산하여 feature 중요도 순위로 정렬된 DataFrame 반환
 
     Parameters
     ----------
-    model : sklearn.ensemble.RandomForestClassifier or RandomForestRegressor
-        학습된 RandomForest 모델
-    X_features : pandas.DataFrame or numpy.ndarray
-        SHAP 값을 계산할 피처 데이터 (train_data)
-    feature_names : list of str, optional
-        피처 이름 리스트. None이면 X_features.columns 사용
+    model : estimator
+        학습된 RandomForest, XGB 등의 tree 기반 모델
+    X : pd.DataFrame
+        SHAP 값을 계산할 입력 피처 데이터
+    max_display : int or None, optional
+        반환할 상위 feature 개수 (None이면 전체 반환)
+
+    Returns
+    -------
+    pd.DataFrame
+        columns = ['feature', 'importance']
+        importance 는 SHAP 값의 평균 절대값
     """
     # 1) Explainer 생성
     explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(X)
 
-    # 2) SHAP 값 계산
-    shap_values = explainer.shap_values(X_features)
-
-    # 3) 분류 모델일 경우 양성 클래스(1)의 shap value만 선택
-    if isinstance(shap_values, list) and len(shap_values) > 1:
-        # shap_values[0]: 음성 클래스, shap_values[1]: 양성 클래스
-        shap_val = shap_values[1]
+    # 2) shap_values 형태에 관계없이 (n_samples, n_features) 로 펴주기
+    if isinstance(shap_values, list):
+        # 분류의 경우 클래스별 리스트로 반환됨 -> 클래스 차원 평균
+        try:
+            # 정상적인 (n_samples, n_features, n_classes)
+            shap_array = np.stack(shap_values, axis=-1).mean(axis=-1)
+        except Exception:
+            # 혹시 다른 형태(list of arrays) 이면 배열화 후 평균
+            shap_array = np.array(shap_values).mean(axis=0)
     else:
-        shap_val = shap_values
+        shap_array = np.array(shap_values)
 
-    # 4) feature 이름 설정
-    names = feature_names if feature_names is not None else (
-        X_features.columns.tolist() if hasattr(X_features, 'columns') else None
-    )
+    # 3) 차원 축소: 2차원보다 크면 뒷차원들 전부 평균
+    if shap_array.ndim > 2:
+        # 예: (n_samples, n_features, x, y...) 형태
+        extra_axes = tuple(range(2, shap_array.ndim))
+        shap_array = shap_array.mean(axis=extra_axes)
 
-    # 5) Bar 형태의 global importance
-    plt.figure(figsize=(8, 6))
-    shap.summary_plot(shap_val, X_features, feature_names=names, plot_type="bar", show=False)
-    plt.title("Feature Importance (SHAP)")
-    plt.tight_layout()
-    plt.show()
+    # 4) 이제 (n_samples, n_features) 여야 함
+    if shap_array.ndim != 2:
+        raise ValueError(f"SHAP array 가 2차원이 아닙니다: shape={shap_array.shape}")
 
-    # 6) Beeswarm 형태의 summary plot
-    plt.figure(figsize=(10, 8))
-    shap.summary_plot(shap_val, X_features, feature_names=names, show=False)
-    plt.title("SHAP Summary Plot")
-    plt.tight_layout()
-    plt.show()
+    # 5) 피처별 평균 절대값 계산
+    mean_abs_shap = np.abs(shap_array).mean(axis=0).ravel()
+
+    # 6) 길이 검증
+    if mean_abs_shap.shape[0] != X.shape[1]:
+        raise ValueError(
+            f"피처 개수({X.shape[1]})와 SHAP 값 개수"
+            f"({mean_abs_shap.shape[0]})가 다릅니다."
+        )
+
+    # 7) DataFrame으로 정리
+    feat_imp = pd.DataFrame({
+        'feature': X.columns.to_list(),
+        'importance': mean_abs_shap
+    }).sort_values('importance', ascending=False).reset_index(drop=True)
+
+    # 8) 상위 N개만 선택
+    if max_display is not None:
+        feat_imp = feat_imp.head(max_display)
+
+    return feat_imp
+
+import os, warnings
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.stats import ttest_ind
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+# ── 보조 함수 ──────────────────────────────────────────────────
+def get_next_boxplot_dir(parent_dir: str, prefix: str = "boxplots") -> str:
+    """새로운 box-plot 하위 폴더 이름을 자동으로 생성."""
+    idx = 1
+    while True:
+        candidate = os.path.join(parent_dir, f"{prefix}_{idx:02d}")
+        if not os.path.exists(candidate):
+            return candidate
+        idx += 1
+
+def cohen_d(x: pd.Series, y: pd.Series) -> float:
+    """Cohen's d (pooled SD)."""
+    nx, ny = x.count(), y.count()
+    if nx < 2 or ny < 2:
+        return np.nan
+    pooled_std = np.sqrt(((nx-1)*x.var(ddof=1) + (ny-1)*y.var(ddof=1)) / (nx+ny-2))
+    return (x.mean() - y.mean()) / pooled_std if pooled_std else np.nan
+
+# ── 메인 함수 ──────────────────────────────────────────────────
+def analyze_cluster_difference(
+    df: pd.DataFrame,
+    k_final: int,
+    result_dir: str,
+    cluster_col_prefix: str = "cluster_k",
+    boxplot_prefix: str = "boxplots",
+    encoding: str = "utf-8-sig"
+) -> pd.DataFrame:
+    """
+    두 군집(target=0, 1)의 피처 통계·차이·효과크기·t-test 결과를 계산하고
+    CSV·box-plot 파일을 저장한다.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        원본 데이터프레임(군집 컬럼 포함).
+    k_final : int
+        사용한 K-means 군집 수.
+    result_dir : str
+        결과 파일을 저장할 상위 폴더.
+    cluster_col_prefix : str, optional
+        군집 컬럼 이름 접두사(기본: "cluster_k").
+    boxplot_prefix : str, optional
+        box-plot 하위 폴더 접두사(기본: "boxplots").
+    encoding : str, optional
+        CSV 저장 인코딩(기본: "utf-8-sig").
+
+    Returns
+    -------
+    pd.DataFrame
+        통계·차이·효과크기·p-value가 포함된 DataFrame
+        (효과 크기 |d| 기준 내림차순 정렬).
+    """
+    # 0) 결과 폴더
+    stat_dir = os.path.join(result_dir, "target0_vs_1")
+    os.makedirs(stat_dir, exist_ok=True)
+
+    # 1) 군집별 데이터 분리
+    cluster_col = f"{cluster_col_prefix}{k_final}"
+    mask0 = df[cluster_col] == 0
+    mask1 = df[cluster_col] == 1
+
+    X0 = df.loc[mask0].drop(columns=[cluster_col]).copy()
+    X1 = df.loc[mask1].drop(columns=[cluster_col]).copy()
+
+    # 2) 통계·차이 계산
+    rows = []
+    for col in X0.columns:
+        s0, s1 = X0[col].dropna(), X1[col].dropna()
+
+        mean0, std0, med0 = s0.mean(), s0.std(), s0.median()
+        mean1, std1, med1 = s1.mean(), s1.std(), s1.median()
+
+        diff = mean1 - mean0
+        pct  = diff / abs(mean0) * 100 if mean0 != 0 else np.nan
+        d    = cohen_d(s0, s1)
+        t, p = ttest_ind(s0, s1, equal_var=False, nan_policy="omit")
+
+        rows.append([mean0, std0, med0, mean1, std1, med1, diff, pct, d, p])
+
+    cols = ["mean_0", "std_0", "median_0",
+            "mean_1", "std_1", "median_1",
+            "mean_diff", "pct_diff", "cohen_d", "p_value"]
+
+    compare_df = pd.DataFrame(rows, index=X0.columns, columns=cols)
+    compare_df.sort_values("cohen_d", key=lambda s: s.abs(),
+                           ascending=False, inplace=True)
+
+    # 3) CSV 저장
+    stats_path = os.path.join(stat_dir, "clustered_target0_vs_1_statistics.csv")
+    compare_df.to_csv(stats_path, encoding=encoding)
+    print(f"■ 통계 CSV 저장 → {stats_path}")
+
+    # 4) box-plot 저장
+    plot_dir = get_next_boxplot_dir(stat_dir, prefix=boxplot_prefix)
+    os.makedirs(plot_dir, exist_ok=True)
+
+    for col in X0.columns:
+        plt.figure(figsize=(10, 5))
+        plt.boxplot([X0[col].dropna(), X1[col].dropna()],
+                    labels=["target=0", "target=1"])
+        plt.title(f"{col} (target별 분포)")
+        plt.ylabel(col)
+        plt.tight_layout()
+
+        plt.savefig(os.path.join(plot_dir, f"{col}_boxplot.png"), dpi=300)
+        plt.close()
+
+    print(f"■ box-plot PNG 저장 → {plot_dir} 폴더 내 다수 파일")
+    return compare_df
