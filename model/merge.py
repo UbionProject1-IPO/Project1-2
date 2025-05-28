@@ -8,7 +8,6 @@ BASE_FILE    = os.path.join(PATH_PRICE, "주가수익률_base.csv")
 
 # ── 주가수익률 기본 테이블 로드 ─────────────────────────────
 df_base = pd.read_csv(BASE_FILE)
-df_base.drop("Unnamed: 0", axis=1, inplace=True)
 
 # ── 파일명에서 지표 코드(ESI, CSI …) 추출용 패턴 ───────────
 regex = re.compile(r"경기국면\((.+?)\)\.csv$")
