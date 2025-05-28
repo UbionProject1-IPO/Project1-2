@@ -30,7 +30,7 @@ def get_next_boxplot_dir(stat_dir):
 RESULT_DIR  = "model/model_result"
 
 # ─── 1) (예시) 데이터프레임 로드 ────────────────────────────
-df = pd.read_csv("data/주가수익률/주가수익률_CSI.csv")
+df = pd.read_csv("data/주가수익률/주가수익률_CSI_noFundmental_kmeans_scaled.csv")
 df.drop(columns=["회사명"], inplace=True)
 if "stock_code" in df.columns:
     df.drop(columns="stock_code", inplace=True)
@@ -47,12 +47,7 @@ CLUSTER_COL = f"cluster_k{k_final}"
 # ─── 2) 결과 확인 ─────────────────────────────────────────
 print("\n[샘플 결과]")
 print(df.head())
-
-# ─── 3) 각 군집별 기업 수 확인 ──────────────────────────
-label_counts = df[f"cluster_k{k_final}"].value_counts().sort_index()
-print("\n[군집별 기업 수]")
-for lbl, cnt in label_counts.items():
-    print(f"  라벨 {lbl}: {cnt}개")
+# df.to_csv("주가수익률_clustering.csv", index=False)
 
 
 # ─── 11) 결과 확인 ─────────────────────────────────────────
@@ -64,7 +59,6 @@ fi_df = function.feature_engineering(df, k_final, "국면_clustering")
 # ── top-10 리스트 추출 ─────────────────────────────────────────
 top10_features = fi_df.head(10)["feature"].tolist()
 features = fi_df['feature'].tolist()
-print(features)
 
 # ── 조건 분기: 원하는 컬럼이 top-10 내부에 있는지 확인 ───────
 TARGET_FEATURE = "경기국면"      # <- 여기에 확인할 컬럼명을 입력
