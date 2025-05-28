@@ -40,27 +40,17 @@ if "Unnamed: 0" in df.columns:
     df.drop(columns="Unnamed: 0", inplace=True)
 df.dropna(inplace=True)
 
-df, k_final = function.clustering(df)
+df, k_final = function.cluster_gmm(df)
 
 CLUSTER_COL = f"cluster_k{k_final}" 
 
-# ─── 2) 결과 확인 ─────────────────────────────────────────
-print("\n[샘플 결과]")
-print(df.head())
-# df.to_csv("주가수익률_clustering.csv", index=False)
-
-
-# ─── 11) 결과 확인 ─────────────────────────────────────────
-print("\n[샘플 결과]")
-print(df.head())
-
 fi_df = function.feature_engineering(df, k_final, "국면_clustering")
 
-# ── top-10 리스트 추출 ─────────────────────────────────────────
 top10_features = fi_df.head(10)["feature"].tolist()
 features = fi_df['feature'].tolist()
 
-# ── 조건 분기: 원하는 컬럼이 top-10 내부에 있는지 확인 ───────
+df_stats = function.analyze_cluster_difference(df, k_final=k_final, result_dir=RESULT_DIR)
+
 TARGET_FEATURE = "경기국면"      # <- 여기에 확인할 컬럼명을 입력
 
 if TARGET_FEATURE in top10_features:
@@ -110,11 +100,11 @@ if TARGET_FEATURE in top10_features:
     print(f"■ box-plot PNG 저장 → {plot_dir} 폴더 내 다수 파일")
 
 
-    X0_clustered, X0_k_final = function.clustering(X0)
-    X0_fi_df = function.feature_engineering(X0_clustered, X0_k_final, "국면0_clustering")
+    X0, X0_k_final = function.cluster_gmm(X0)
+    X0_fi_df = function.feature_engineering(X0, X0_k_final, "국면0_clustering")
 
-    X1_clustered, X1_k_final = function.clustering(X1)
-    X1_fi_df = function.feature_engineering(X1_clustered, X1_k_final, "국면1_clustering")
+    X1, X1_k_final = function.cluster_gmm(X1)
+    X1_fi_df = function.feature_engineering(X1, X1_k_final, "국면1_clustering")
 
 else:
     print(f"『{TARGET_FEATURE}』이(가) Top-10 안에 없으므로 후속 코드를 건너뜁니다.")
