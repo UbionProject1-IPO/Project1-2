@@ -3,8 +3,8 @@ import pandas as pd
 
 # ── 경로 설정 ──────────────────────────────────────────────
 PATH_SECTION = "data/경기국면"                 # 지표별 CSV 폴더
-PATH_PRICE   = "data/주가수익률_raw"              # 주가수익률 폴더
-BASE_FILE    = os.path.join(PATH_PRICE, "주가수익률_base_vif.csv")
+PATH_PRICE   = "data/주가수익률"              # 주가수익률 폴더
+BASE_FILE    = os.path.join("data/주가수익률_raw", "주가수익률_base_selected.csv")
 
 # ── 주가수익률 기본 테이블 로드 ─────────────────────────────
 df_base = pd.read_csv(BASE_FILE)
