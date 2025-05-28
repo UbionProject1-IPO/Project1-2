@@ -49,8 +49,18 @@ print(f"■ box-plot PNG 저장 → {plot_dir} 폴더 내 다수 파일")
 
 # ── 4) 클러스터링·피처 중요도 ────────────────────────────────
 #  ※ clustering() 내부에서 필요-없는 열 제거를 하지 않는다면 이미 제거한 X0/X1 그대로 사용
+
+raw_data = pd.read_csv("data/주가수익률_raw/주가수익률_base_selected.csv")
+raw_data.drop(columns=["회사명", "stock_code", "상장일"], inplace=True)
+
 X0_clustered, k0 = function.clustering(X0.copy())
+X0_clustered = raw_data.join(
+    X0_clustered[f"cluster_k{k0}"], how="inner"  # ← 인덱스 교집합만 유지
+)
 fi0 = function.feature_engineering(X0_clustered, k0, "국면0_clustering")
 
 X1_clustered, k1 = function.clustering(X1.copy())
+X1_clustered = raw_data.join(
+    X1_clustered[f"cluster_k{k1}"], how="inner"  # ← 인덱스 교집합만 유지
+)
 fi1 = function.feature_engineering(X1_clustered, k1, "국면1_clustering")
