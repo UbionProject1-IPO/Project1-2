@@ -1,72 +1,59 @@
 #!/usr/bin/env python3
-# ───────────────────────── scale.py ─────────────────────────
+# ───────────────────────── scale_for_kmeans.py ─────────────────────────
 """
-CSV에 권장 스케일링 적용 ─ 컬럼 이름 유지 버전
--------------------------------------------------------------
-상단 상수만 수정 → 바로 실행
-$ python scale.py                 # 상수 사용
-$ python scale.py -i raw.csv ...   # CLI 인자로 덮어쓰기
--------------------------------------------------------------
-필수: pandas, numpy, scikit-learn>=1.4, joblib
+K-means 클러스터링용 추천 전처리
+ - 식별자·범주형 제외
+ - 왜도 큰 양수형 변수에 log1p
+ - 모든 수치형 변수 StandardScaler
+ - '경기국면'은 결과에 그대로 붙여둠
 """
 
-# ─── 0) ★ 경로 상수 (필요 시 수정) ────────────────────────────
-INPUT_PATH    = "./data/주가수익률/주가수익률_CSI_noFundmental.csv"         # 입력 CSV
-OUTPUT_PATH   = "./data/주가수익률/주가수익률_CSI_noFundmental_scaled.csv"      # 전처리 결과 CSV
-
-# 1) 라이브러리
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import (
-    StandardScaler,
-    RobustScaler,
-    MinMaxScaler,
-    PowerTransformer,
-)
+from sklearn.preprocessing import StandardScaler
+
+# ─── 상수 (필요 시 수정) ───────────────────────────────────────────
+INPUT_PATH  = "./data/주가수익률/주가수익률_CSI_noFundmental.csv"
+OUTPUT_PATH = "./data/주가수익률/주가수익률_CSI_noFundmental_kmeans_scaled.csv"
 
 def main():
-    # 2) 데이터 로드
+    # 1) 데이터 로드
     df = pd.read_csv(INPUT_PATH)
-    print(f"[로드] {INPUT_PATH} → shape={df.shape}")
+    print(f"[로드] {INPUT_PATH}  shape={df.shape}")
 
-    # 3) 컬럼 그룹 정의 (필요 시 수정)
-    log_cols  = ["1~5일 수익률 표준편차", "6개월 확약", "VIXCLS", "업력", "asset_turnover"]
-    pt_cols   = ["kospi200(-20)", "op_margin", "roe", "roa", "net_margin"]
-    rb_cols   = ["nasdaq(-20)", "환율변동률(-20)", "putcall(-20)", "oi_ta", "ni_oi_ratio"]
-    std_cols  = ["equity_ratio", "debt_asset"]
-    pct_cols  = ["우리사주조합", "기관투자자", "일반투자자"]
-    # '경기국면'은 여기서 제외 → 그대로 남음
-    # (추가로 변화 없이 남길 다른 컬럼이 있다면 여기에 추가하세요)
+    # 2) 제외할 컬럼
+    id_cols = ["stock_code", "회사명"]                  # 식별자
+    cat_cols = ["경기국면"]                              # 범주형
+    keep_cols = id_cols + cat_cols
 
-    # 4) 변환 적용
-    # 4-1) 로그 + StandardScaler
-    df[log_cols] = StandardScaler().fit_transform(
-        np.log1p(df[log_cols])
-    )
+    # 3) 수치형만 분리
+    num_df = df.drop(columns=keep_cols, errors="ignore")
+    # 컬럼별 최소값·왜도 확인
+    skew = num_df.skew().abs()
+    # 4) 왜도 >1 & 최솟값 >=0 인 컬럼 → 로그 변환
+    log_cols = skew[(skew > 1) & (num_df.min() >= 0)].index.tolist()
+    if log_cols:
+        num_df[log_cols] = np.log1p(num_df[log_cols])
+        print(f"  • Log1p 변환: {log_cols}")
+    else:
+        print("  • Log1p 대상 없음")
 
-    # 4-2) Yeo-Johnson
-    df[pt_cols] = PowerTransformer(method="yeo-johnson").fit_transform(
-        df[pt_cols]
-    )
+    # 5) StandardScaler 적용 (모든 수치형)
+    scaler = StandardScaler()
+    num_scaled = scaler.fit_transform(num_df)
+    num_df[:] = num_scaled
+    print(f"  • StandardScaler 적용: {list(num_df.columns)}")
 
-    # 4-3) RobustScaler
-    df[rb_cols] = RobustScaler().fit_transform(
-        df[rb_cols]
-    )
+    # 6) 결과 병합
+    result = pd.concat([
+        df[id_cols],        # 식별자 (클러스터링용은 제외해도 됨)
+        num_df,             # 스케일된 수치형
+        df[cat_cols]        # 원본 경기국면
+    ], axis=1)
 
-    # 4-4) StandardScaler
-    df[std_cols] = StandardScaler().fit_transform(
-        df[std_cols]
-    )
-
-    # 4-5) MinMaxScaler (0-1)
-    df[pct_cols] = MinMaxScaler().fit_transform(
-        df[pct_cols]
-    )
-
-    # 5) 결과 저장
-    df.to_csv(OUTPUT_PATH, index=False)
-    print(f"[저장] 스케일링 완료 → {OUTPUT_PATH}")
+    # 7) 저장
+    result.to_csv(OUTPUT_PATH, index=False)
+    print(f"[저장] 클러스터링용 스케일링 완료 → {OUTPUT_PATH}")
 
 if __name__ == "__main__":
     main()
