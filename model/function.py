@@ -45,9 +45,25 @@ def evaluate_kmeans(data, k_min=2, k_max=10, random_state=42):
 def clustering(df) -> pd.DataFrame:
     # ─── 2) 데이터 스케일링 ────────────────────────────────────
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(df.values)
-    df_scaled = pd.DataFrame(X_scaled, columns=df.columns, index=df.index)
-    df_scaled.to_csv("data/주가수익률/주가수익률_Temp_scaled.csv", encoding="utf-8-sig", index=True)
+    if "경기국면" in df:
+        exclude_col = '경기국면'
+
+        # 2) 스케일링할 컬럼 목록(경기국면을 뺀 나머지)
+        num_cols = df.columns.drop(exclude_col)
+
+        # 3) 원본은 건드리지 않고 복사본 생성
+        df_scaled = df.copy()
+
+        # 4) 나머지 수치형 컬럼만 스케일링
+        df_scaled[num_cols] = scaler.fit_transform(df_scaled[num_cols])
+
+        # 5) 결과 확인
+        X_scaled = df_scaled
+    else:
+        df_scaled = df.copy()
+        X_scaled = scaler.fit_transform(df_scaled.values)
+
+    df_scaled.to_csv("data/주가수익률_raw/주가수익률_scaled.csv", encoding="utf-8-sig", index=True)
 
     # ─── 4) K 범위 평가 ────────────────────────────────────────
     K_MIN, K_MAX = 2, 10
@@ -120,11 +136,11 @@ def feature_engineering(df, k_final, file_name):
     warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
     CLUSTER_COL = f"cluster_k{k_final}"
-    RESULT_DIR  = "model/model_result"
+    RESULT_DIR  = "result"
 
     RANDOM_STATE = 42
     N_SPLITS     = 5
-    N_TRIALS_RF  = 50
+    N_TRIALS_RF  = 10
 
     # ─── 1) 데이터·결측치 처리 ────────────────────────────────
     X, y = df.drop(columns=[CLUSTER_COL]), df[CLUSTER_COL]
@@ -209,7 +225,7 @@ def feature_engineering(df, k_final, file_name):
                .reset_index()
                .rename(columns={"index": "feature"}))
 
-    fi_path = os.path.join(RESULT_DIR, f"{file_name}_feature_importance.csv")
+    fi_path = os.path.join(RESULT_DIR, f"{file_name}_fi.csv")
     fi_df.to_csv(fi_path, index=False, encoding="utf-8-sig")
 
     shap_df = get_shap_feature_ranking(best_rf, X, max_display=None)
@@ -260,7 +276,23 @@ def _get_user_k_choice(k_min, k_max, scores, score_name="Silhouette Score", high
 def cluster_gmm(df: pd.DataFrame, k_min=2, k_max=10, random_state=42) -> tuple[pd.DataFrame, int]:
     print("--- Gaussian Mixture Model (GMM) Clustering ---")
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(df.values)
+    if "경기국면" in df:
+        exclude_col = '경기국면'
+
+        # 2) 스케일링할 컬럼 목록(경기국면을 뺀 나머지)
+        num_cols = df.columns.drop(exclude_col)
+
+        # 3) 원본은 건드리지 않고 복사본 생성
+        df_scaled = df.copy()
+
+        # 4) 나머지 수치형 컬럼만 스케일링
+        df_scaled[num_cols] = scaler.fit_transform(df_scaled[num_cols])
+
+        # 5) 결과 확인
+        X_scaled = df_scaled
+    else:
+        df_scaled = df.copy()
+        X_scaled = scaler.fit_transform(df_scaled.values)
     
     silhouettes, bics, aics = [], [], []
     possible_k_values = list(range(k_min, k_max + 1))
@@ -295,7 +327,23 @@ def cluster_gmm(df: pd.DataFrame, k_min=2, k_max=10, random_state=42) -> tuple[p
 def cluster_hierarchical(df: pd.DataFrame, k_min=2, k_max=10, linkage_method='ward') -> tuple[pd.DataFrame, int]:
     print(f"--- Agglomerative Hierarchical Clustering (Linkage: {linkage_method}) ---")
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(df.values)
+    if "경기국면" in df:
+        exclude_col = '경기국면'
+
+        # 2) 스케일링할 컬럼 목록(경기국면을 뺀 나머지)
+        num_cols = df.columns.drop(exclude_col)
+
+        # 3) 원본은 건드리지 않고 복사본 생성
+        df_scaled = df.copy()
+
+        # 4) 나머지 수치형 컬럼만 스케일링
+        df_scaled[num_cols] = scaler.fit_transform(df_scaled[num_cols])
+
+        # 5) 결과 확인
+        X_scaled = df_scaled
+    else:
+        df_scaled = df.copy()
+        X_scaled = scaler.fit_transform(df_scaled.values)
 
     silhouettes = []
     possible_k_values = list(range(k_min, k_max + 1))
@@ -323,7 +371,23 @@ def cluster_hierarchical(df: pd.DataFrame, k_min=2, k_max=10, linkage_method='wa
 def cluster_dbscan(df: pd.DataFrame, eps=0.5, min_samples=5) -> tuple[pd.DataFrame, int]:
     print(f"--- DBSCAN Clustering (eps={eps}, min_samples={min_samples}) ---")
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(df.values)
+    if "경기국면" in df:
+        exclude_col = '경기국면'
+
+        # 2) 스케일링할 컬럼 목록(경기국면을 뺀 나머지)
+        num_cols = df.columns.drop(exclude_col)
+
+        # 3) 원본은 건드리지 않고 복사본 생성
+        df_scaled = df.copy()
+
+        # 4) 나머지 수치형 컬럼만 스케일링
+        df_scaled[num_cols] = scaler.fit_transform(df_scaled[num_cols])
+
+        # 5) 결과 확인
+        X_scaled = df_scaled
+    else:
+        df_scaled = df.copy()
+        X_scaled = scaler.fit_transform(df_scaled.values)
 
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     labels = dbscan.fit_predict(X_scaled)
