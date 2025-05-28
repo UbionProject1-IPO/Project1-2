@@ -31,6 +31,7 @@ RESULT_DIR  = "model/model_result"
 
 # ─── 1) (예시) 데이터프레임 로드 ────────────────────────────
 df = pd.read_csv("data/주가수익률/주가수익률_CSI_noFundmental_kmeans_scaled.csv")
+df_copy = df.copy()
 df.drop(columns=["회사명"], inplace=True)
 if "stock_code" in df.columns:
     df.drop(columns="stock_code", inplace=True)
@@ -41,6 +42,18 @@ if "Unnamed: 0" in df.columns:
 df.dropna(inplace=True)
 
 df, k_final = function.cluster_gmm(df)
+
+#---
+# df_copy = df_copy.join(df[f"cluster_k{k_final}"])
+# df_base = pd.read_csv("data/주가수익률/주가수익률_base.csv")
+# df_merged = df_base.merge(
+#     df_copy[['stock_code', f'cluster_k{k_final}']],
+#     on='stock_code',
+#     how='left'
+# )
+# df_merged.drop(columns=["회사명", "stock_code"], inplace=True)
+# df_merged.to_csv("주가수익률_clustering.csv", index=False)
+#---
 
 CLUSTER_COL = f"cluster_k{k_final}" 
 
@@ -108,4 +121,10 @@ if TARGET_FEATURE in top10_features:
 
 else:
     print(f"『{TARGET_FEATURE}』이(가) Top-10 안에 없으므로 후속 코드를 건너뜁니다.")
+
+    df = pd.read_csv("./data/주가수익률/주가수익률_base.csv")
+
+    df.drop(["회사명", "stock_code"], axis=1, inplace=True)
+    df, k_final = function.cluster_gmm(df)
+    fi_df = function.feature_engineering(df, k_final, "전체_clustering")
     
