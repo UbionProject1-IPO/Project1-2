@@ -136,7 +136,7 @@ def feature_engineering(df, k_final, file_name):
     warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
     CLUSTER_COL = f"cluster_k{k_final}"
-    RESULT_DIR  = "result"
+    RESULT_DIR  = "result_2"
 
     RANDOM_STATE = 42
     N_SPLITS     = 5
