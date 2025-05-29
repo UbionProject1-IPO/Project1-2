@@ -140,7 +140,7 @@ def feature_engineering(df, k_final, file_name):
 
     RANDOM_STATE = 42
     N_SPLITS     = 5
-    N_TRIALS_RF  = 10
+    N_TRIALS_RF  = 100
 
     # ─── 1) 데이터·결측치 처리 ────────────────────────────────
     X, y = df.drop(columns=[CLUSTER_COL]), df[CLUSTER_COL]
