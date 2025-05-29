@@ -1,10 +1,10 @@
 {
     "precision_mean": 0.8,
-    "recall_mean": 0.8,
-    "f1_mean": 0.8,
+    "recall_mean": 0.7,
+    "f1_mean": 0.7333333333333333,
     "roc_auc_mean": 1.0,
-    "precision_std": 0.4,
+    "precision_std": 0.4000000000000001,
     "recall_std": 0.4,
-    "f1_std": 0.4,
+    "f1_std": 0.38873012632302,
     "roc_auc_std": 0.0
 }
