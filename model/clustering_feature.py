@@ -1,10 +1,10 @@
 import os, pandas as pd, matplotlib.pyplot as plt
 import function
 
-df = pd.read_csv("data/주가수익률/주가수익률_경기동행지수_최종(50ma).csv")
+df = pd.read_csv("data/주가수익률/주가수익률_CSI.csv")
 df.drop(columns=["회사명", "stock_code", "상장일"], inplace=True)
 
-STAT_DIR = os.path.join("model/model_result")
+STAT_DIR = os.path.join("model/model_result_before")
 os.makedirs(STAT_DIR, exist_ok=True)
 
 TARGET_FEATURE = "경기국면"
@@ -50,17 +50,19 @@ print(f"■ box-plot PNG 저장 → {plot_dir} 폴더 내 다수 파일")
 # ── 4) 클러스터링·피처 중요도 ────────────────────────────────
 #  ※ clustering() 내부에서 필요-없는 열 제거를 하지 않는다면 이미 제거한 X0/X1 그대로 사용
 
-raw_data = pd.read_csv("data/주가수익률_raw/주가수익률_final.csv")
+raw_data = pd.read_csv("data/주가수익률_raw/주가수익률_base_selected_band.csv")
 raw_data.drop(columns=["회사명", "stock_code", "상장일"], inplace=True)
 
 X0_clustered, k0 = function.clustering(X0.copy())
 X0_clustered = raw_data.join(
     X0_clustered[f"cluster_k{k0}"], how="inner"  # ← 인덱스 교집합만 유지
 )
+X0_clustered.to_csv("data/clustered_before/국면0_clustering.csv", encoding="utf-8-sig")
 fi0 = function.feature_engineering(X0_clustered, k0, "국면0_clustering")
 
 X1_clustered, k1 = function.clustering(X1.copy())
 X1_clustered = raw_data.join(
     X1_clustered[f"cluster_k{k1}"], how="inner"  # ← 인덱스 교집합만 유지
 )
+X1_clustered.to_csv("data/clustered_before/국면1_clustering.csv", encoding="utf-8-sig")
 fi1 = function.feature_engineering(X1_clustered, k1, "국면1_clustering")
