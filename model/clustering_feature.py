@@ -50,7 +50,7 @@ print(f"■ box-plot PNG 저장 → {plot_dir} 폴더 내 다수 파일")
 # ── 4) 클러스터링·피처 중요도 ────────────────────────────────
 #  ※ clustering() 내부에서 필요-없는 열 제거를 하지 않는다면 이미 제거한 X0/X1 그대로 사용
 
-raw_data = pd.read_csv("data/주가수익률_raw/주가수익률_base_selected.csv")
+raw_data = pd.read_csv("data/주가수익률_raw/주가수익률_base_selected_band.csv")
 raw_data.drop(columns=["회사명", "stock_code", "상장일"], inplace=True)
 
 X0_clustered, k0 = function.clustering(X0.copy())
