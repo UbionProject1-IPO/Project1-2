@@ -140,7 +140,7 @@ def feature_engineering(df, k_final, file_name):
 
     RANDOM_STATE = 42
     N_SPLITS     = 5
-    N_TRIALS_RF  = 100
+    N_TRIALS_RF  = 50
 
     # ─── 1) 데이터·결측치 처리 ────────────────────────────────
     X, y = df.drop(columns=[CLUSTER_COL]), df[CLUSTER_COL]
@@ -175,8 +175,8 @@ def feature_engineering(df, k_final, file_name):
     # ─── 3) Optuna objective ─────────────────────────────────
     def rf_objective(trial):
         params = {
-            "n_estimators":      trial.suggest_int("n_estimators", 50, 1000),
-            "max_depth":         trial.suggest_int("max_depth", 2, 10, log=True),
+            "n_estimators":      trial.suggest_int("n_estimators", 50, 300),
+            "max_depth":         trial.suggest_int("max_depth", 2, 5, log=True),
             "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
             "min_samples_leaf":  trial.suggest_int("min_samples_leaf", 1, 10),
             "max_features":      trial.suggest_categorical("max_features", ["sqrt", "log2", None]),
